@@ -1,4 +1,2 @@
 name: task-scheduler-env
-python: 3.10
-entrypoint: inference.py
-server: server.app:app
+sdk: docker
