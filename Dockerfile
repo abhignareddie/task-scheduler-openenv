@@ -1,16 +1,7 @@
-FROM python:3.10
-
-WORKDIR /app
-
-# Copy all project files
-COPY . .
-
-# Install required packages
-RUN pip install --upgrade pip
-RUN pip install openenv-core fastapi uvicorn pydantic pandas numpy
-
-# HF Spaces must use port 7860
-EXPOSE 7860
-
-# Run the FastAPI server
-CMD ["python", "server/app.py"]
+FROM python:3.11-slim 
+WORKDIR /app 
+COPY requirements.txt . 
+RUN pip install --no-cache-dir -r requirements.txt 
+COPY . . 
+EXPOSE 7860 
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"] 
