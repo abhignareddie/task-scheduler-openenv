@@ -5,4 +5,3 @@ def grade(total_reward):
         return 0.5
     else:
         return 0.0
-#hd

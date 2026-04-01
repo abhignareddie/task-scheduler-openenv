@@ -10,7 +10,6 @@ def easy():
     env.current_time = 0
     return env
 
-
 # Medium Task
 def medium():
     env = TaskSchedulerEnv()
@@ -21,7 +20,6 @@ def medium():
     ]
     env.current_time = 0
     return env
-
 
 # Hard Task
 def hard():

@@ -1,0 +1,14 @@
+[project]
+name = "task_scheduler"
+version = "0.1.0"
+description = "Task Scheduler OpenEnv"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core>=0.2.0",
+    "fastapi",
+    "uvicorn",
+    "pydantic"
+]
+
+[project.scripts]
+server = "server.app:main"
