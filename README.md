@@ -1,20 +1,10 @@
-\---
-
-title: task-scheduler-openenv
-
-emoji: 🚀
-
+---
+title: Task Scheduler OpenEnv
+emoji: 🤖
 colorFrom: blue
-
 colorTo: green
-
-sdk: docker
-
-app\_file: server/app.py
-
-app\_port: 7860
-
+sdk: gradio
+sdk_version: "4.0.0"
+app_file: app.py
 pinned: false
-
-\---
-
+---
