@@ -1,6 +1,6 @@
 ---
 title: Task Scheduler OpenEnv
-emoji: ??
+emoji: 🚀
 colorFrom: blue
 colorTo: green
 sdk: docker
