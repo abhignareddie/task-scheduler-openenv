@@ -8,17 +8,17 @@ def run_task(task_func, name):
     total_reward = 0
     step = 0
 
-    print(f"[START] task={name}", flush=True)  # ADD THIS
+    print(f"[START] task={name}", flush=True)
 
     while not done:
         action = 0
         state, reward, done, _ = env.step(action)
         total_reward += reward
         step += 1
-        print(f"[STEP] step={step} reward={reward}", flush=True)  # ADD THIS
+        print(f"[STEP] step={step} reward={reward}", flush=True)
 
     score = grade(total_reward)
-    print(f"[END] task={name} score={score} steps={step}", flush=True)  # CHANGE THIS
+    print(f"[END] task={name} score={score} steps={step}", flush=True)
 
 if __name__ == "__main__":
     print("Running Inference on All Tasks...\n")
