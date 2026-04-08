@@ -5,10 +5,9 @@ from tasks import easy, medium, hard
 from grader import grade
 
 client = OpenAI(
-    base_url=os.environ["API_BASE_URL"],
-    api_key=os.environ["API_KEY"]
+    base_url=os.environ.get("API_BASE_URL", "https://api.openai.com/v1"),
+    api_key=os.environ.get("API_KEY", "dummy_key")
 )
-
 def get_action(state):
     try:
         num_tasks = len(state["tasks"])
