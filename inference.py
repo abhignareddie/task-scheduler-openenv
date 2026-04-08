@@ -1,29 +1,31 @@
 import os
-import sys
+import re
 from openai import OpenAI
 from tasks import easy, medium, hard
 from grader import grade
 
 client = OpenAI(
-    base_url=os.getenv("API_BASE_URL", "https://api.openai.com/v1"),
-    api_key=os.getenv("API_KEY")
+    base_url=os.environ["API_BASE_URL"],
+    api_key=os.environ["API_KEY"]
 )
 
 def get_action(state):
     try:
         num_tasks = len(state["tasks"])
         response = client.chat.completions.create(
-            model=os.getenv("MODEL_NAME", "gpt-4o-mini"),
+            model=os.environ.get("MODEL_NAME", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": "You are a task scheduling agent."},
                 {"role": "user", "content": f"State: {state}. Return action index (0 to {num_tasks - 1}). Integer only."}
             ],
             max_tokens=10
         )
-        action = int(''.join(filter(str.isdigit, response.choices[0].message.content.strip())) or '0')
+        text = response.choices[0].message.content.strip()
+        numbers = re.findall(r'\d+', text)
+        action = int(numbers[0]) if numbers else 0
         return max(0, min(action, num_tasks - 1))
     except Exception as e:
-        print(f"LLM error: {e}", flush=True)
+        print(f"[DEBUG] LLM error: {e}", flush=True)
         return 0
 
 def run_task(task_func, task_name):
@@ -33,7 +35,7 @@ def run_task(task_func, task_name):
     total_reward = 0
     step = 0
     rewards = []
-    model = os.getenv("MODEL_NAME", "gpt-4o-mini")
+    model = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 
     print(f"[START] task={task_name} env=task-scheduler model={model}", flush=True)
 
@@ -45,7 +47,7 @@ def run_task(task_func, task_name):
         step += 1
         rewards.append(normalized)
         error = info.get("error", None)
-        print(f"[STEP] step={step} action={action} reward={normalized:.2f} done={str(done).lower()} error={error}", flush=True)
+        print(f"[STEP] step={step} action={action} reward={normalized:.3f} done={str(done).lower()} error={error}", flush=True)
 
     score = grade(total_reward)
     rewards_str = ",".join(str(r) for r in rewards)
