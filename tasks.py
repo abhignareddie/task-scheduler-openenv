@@ -5,7 +5,8 @@ def easy():
     env = TaskSchedulerEnv()
     env.tasks = [
         {"id": 1, "deadline": 5, "priority": 3, "duration": 1},
-        {"id": 2, "deadline": 6, "priority": 4, "duration": 2}
+        {"id": 2, "deadline": 6, "priority": 4, "duration": 2},
+        {"id": 3, "deadline": 8, "priority": 2, "duration": 1}
     ]
     env.current_time = 0
     return env
