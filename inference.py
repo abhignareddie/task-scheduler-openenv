@@ -6,8 +6,9 @@ from grader import grade
 
 client = OpenAI(
     base_url=os.environ.get("API_BASE_URL", "https://api.openai.com/v1"),
-    api_key=os.environ.get("API_KEY", "dummy_key")
+    api_key=os.environ.get("HF_TOKEN", os.environ.get("API_KEY", "dummy_key"))
 )
+
 def get_action(state):
     try:
         num_tasks = len(state["tasks"])
@@ -38,7 +39,7 @@ def run_task(task_func, task_name):
 
     print(f"[START] task={task_name} env=task-scheduler model={model}", flush=True)
 
-    while not done:
+    while not done and step < 20:
         action = get_action(state)
         state, reward, done, info = env.step(action)
         normalized = round(min(max(reward / 30.0, 0.0), 1.0), 3)
