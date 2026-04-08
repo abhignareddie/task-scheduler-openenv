@@ -1,2 +1,18 @@
 name: task-scheduler-env
 sdk: docker
+version: "1.0"
+description: "A real-world task scheduling environment with LLM-based agent"
+endpoints:
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
+tasks:
+  - id: easy
+    difficulty: easy
+    reward_range: [0.0, 1.0]
+  - id: medium
+    difficulty: medium
+    reward_range: [0.0, 1.0]
+  - id: hard
+    difficulty: hard
+    reward_range: [0.0, 1.0]

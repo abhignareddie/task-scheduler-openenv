@@ -1,60 +1,59 @@
 import os
+import sys
 from openai import OpenAI
 from tasks import easy, medium, hard
 from grader import grade
 
-# Initialize OpenAI client using environment variables
 client = OpenAI(
-    base_url=os.getenv("API_BASE_URL"),
-    api_key=os.getenv("HF_TOKEN")
+    base_url=os.getenv("API_BASE_URL", "https://api.openai.com/v1"),
+    api_key=os.getenv("API_KEY")
 )
 
-# Function to get action from LLM
 def get_action(state):
     try:
+        num_tasks = len(state["tasks"])
         response = client.chat.completions.create(
-            model=os.getenv("MODEL_NAME"),
+            model=os.getenv("MODEL_NAME", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": "You are a task scheduling agent."},
-                {"role": "user", "content": f"Current state: {state}. Return the best action index (integer only)."}
-            ]
+                {"role": "user", "content": f"State: {state}. Return action index (0 to {num_tasks - 1}). Integer only."}
+            ],
+            max_tokens=10
         )
-        return int(response.choices[0].message.content.strip())
-    except:
-        return 0  # fallback safe action
+        action = int(''.join(filter(str.isdigit, response.choices[0].message.content.strip())) or '0')
+        return max(0, min(action, num_tasks - 1))
+    except Exception as e:
+        print(f"LLM error: {e}", flush=True)
+        return 0
 
-
-# Function to run each task
-def run_task(task_func, name):
+def run_task(task_func, task_name):
     env = task_func()
     state = env.state()
     done = False
     total_reward = 0
     step = 0
+    rewards = []
+    model = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
-    print(f"[START] task={name}", flush=True)
+    print(f"[START] task={task_name} env=task-scheduler model={model}", flush=True)
 
     while not done:
         action = get_action(state)
-        state, reward, done, _ = env.step(action)
-
-        # Normalize reward to 0.0–1.0
-        normalized_reward = min(max(reward / 20, 0), 1)
-
-        total_reward += normalized_reward
+        state, reward, done, info = env.step(action)
+        normalized = round(min(max(reward / 30.0, 0.0), 1.0), 3)
+        total_reward += normalized
         step += 1
-
-        print(f"[STEP] step={step} action={action} reward={normalized_reward}", flush=True)
+        rewards.append(normalized)
+        error = info.get("error", None)
+        print(f"[STEP] step={step} action={action} reward={normalized:.2f} done={str(done).lower()} error={error}", flush=True)
 
     score = grade(total_reward)
+    rewards_str = ",".join(str(r) for r in rewards)
+    print(f"[END] success=true steps={step} score={score:.3f} rewards={rewards_str}", flush=True)
+    return score
 
-    print(f"[END] task={name} score={score} steps={step}", flush=True)
-
-
-# Main execution
 if __name__ == "__main__":
-    print("Running Inference on All Tasks...\n")
-
-    run_task(easy, "Easy")
-    run_task(medium, "Medium")
-    run_task(hard, "Hard")
+    print("Running Inference on All Tasks...\n", flush=True)
+    run_task(easy, "easy")
+    run_task(medium, "medium")
+    run_task(hard, "hard")
