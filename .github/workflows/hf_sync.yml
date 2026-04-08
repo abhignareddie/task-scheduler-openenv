@@ -8,19 +8,14 @@ on:
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
 
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git clone https://huggingface.co/spaces/Abhiirdy/task-scheduler-openenv repo
-          rsync -av --exclude='.git' ./ repo/
-          cd repo
-          git config user.email "action@github.com"
-          git config user.name "github-actions"
-          git add .
-          git commit -m "sync from github" || echo "no changes"
-          git push https://$HF_TOKEN@huggingface.co/spaces/Abhiirdy/task-scheduler-openenv main
+          git push -f https://Abhiirdy:$HF_TOKEN@huggingface.co/spaces/Abhiirdy/task-scheduler-openenv main
