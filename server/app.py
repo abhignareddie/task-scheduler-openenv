@@ -3,7 +3,6 @@ import os
 import re
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
 from openai import OpenAI
 
 # Fix import path
@@ -20,10 +19,6 @@ client = OpenAI(
     base_url=os.environ["API_BASE_URL"],
     api_key=os.environ["API_KEY"]
 )
-
-# ✅ Request model (IMPORTANT for validator)
-class ActionRequest(BaseModel):
-    action: int
 
 # ✅ LLM function
 def get_action(state):
@@ -71,12 +66,12 @@ def reset():
     return env.reset()
 
 
-# ✅ Step endpoint (CRITICAL FIX HERE)
+# ✅ FINAL FIXED STEP ENDPOINT (NO INPUT PARAMETER)
 @app.post("/step")
-def step(request: ActionRequest):
+def step():
     state = env.state()
 
-    # 🔥 LLM CALL (THIS IS WHAT VALIDATOR NEEDS)
+    # 🔥 LLM CALL (REQUIRED)
     action = get_action(state)
 
     state, reward, done, info = env.step(action)
@@ -89,7 +84,7 @@ def step(request: ActionRequest):
     }
 
 
-# ✅ Entry point for OpenEnv
+# ✅ Entry point
 def main():
     uvicorn.run(app, host="0.0.0.0", port=7860)
 
