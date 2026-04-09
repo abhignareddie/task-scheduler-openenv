@@ -26,7 +26,6 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 # Validate API configuration
 if not API_BASE_URL or not API_KEY:
     print("[ERROR] API_BASE_URL and API_KEY must be set", flush=True)
-    # Don't exit, just log for server mode
 
 print(f"[INFO] API_BASE_URL: {API_BASE_URL}", flush=True)
 print(f"[INFO] MODEL_NAME: {MODEL_NAME}", flush=True)
@@ -195,6 +194,12 @@ def step_default(request: StepRequest):
     
     return step_endpoint(env_id, request)
 
-if __name__ == "__main__":
+# ✅ ADDED: Main function required by OpenEnv validator
+def main():
+    """Main entry point for the application"""
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# ✅ ADDED: Proper if __name__ block
+if __name__ == "__main__":
+    main()
