@@ -25,16 +25,16 @@ class TaskSchedulerEnv:
 
     def step(self, action):
         if action < 0 or action >= len(self.tasks):
-            return self.state(), -10, False, {"error": "Invalid action"}
+            return self.state(), -10.0, False, {"error": "Invalid action"}
 
         task = self.tasks.pop(action)
         self.current_time += task["duration"]
 
         if self.current_time <= task["deadline"]:
-            reward = task["priority"] * 2
+            reward = float(task["priority"] * 2)
         else:
-            reward = task["priority"] - 5
+            reward = float(task["priority"] - 5)
 
-        reward += (task["deadline"] - self.current_time)
+        reward += float(task["deadline"] - self.current_time)
         done = len(self.tasks) == 0
         return self.state(), reward, done, {}
