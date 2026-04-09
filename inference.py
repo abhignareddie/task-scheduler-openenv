@@ -2,7 +2,8 @@ import os
 import re
 import sys
 from openai import OpenAI
-from env import TaskSchedulerEnv
+from tasks import easy, medium, hard
+from grader import grade
 
 # MUST use their environment variables
 API_BASE_URL = os.environ.get("API_BASE_URL")
@@ -79,9 +80,9 @@ Return ONLY the number, nothing else."""
             return best_idx
         return 0
 
-def run_episode(env, episode_name):
-    """Run a single episode with required stdout format"""
-    env.reset()
+def run_task(task_func, task_name):
+    """Run a single task with required stdout format"""
+    env = task_func()
     state = env.state()
     done = False
     total_reward = 0
@@ -89,7 +90,7 @@ def run_episode(env, episode_name):
     rewards = []
     
     # REQUIRED: [START] line format
-    print(f"[START] task={episode_name} env=task-scheduler model={MODEL_NAME}", flush=True)
+    print(f"[START] task={task_name} env=task-scheduler model={MODEL_NAME}", flush=True)
     
     while not done and step < 20:
         action = get_action(state)
@@ -106,8 +107,7 @@ def run_episode(env, episode_name):
         # REQUIRED: [STEP] line format
         print(f"[STEP] step={step} action={action} reward={normalized:.3f} done={str(done).lower()} error={error}", flush=True)
     
-    # Calculate score (0.0-1.0)
-    score = min(1.0, total_reward / 10.0)
+    score = grade(total_reward)
     rewards_str = ",".join(f"{r:.3f}" for r in rewards)
     
     # REQUIRED: [END] line format
@@ -118,16 +118,9 @@ if __name__ == "__main__":
     print("Running Inference on All Tasks...\n", flush=True)
     
     results = {}
-    
-    # Run 3 episodes to simulate easy, medium, hard
-    env = TaskSchedulerEnv()
-    results['easy'] = run_episode(env, "easy")
-    
-    env = TaskSchedulerEnv()
-    results['medium'] = run_episode(env, "medium")
-    
-    env = TaskSchedulerEnv()
-    results['hard'] = run_episode(env, "hard")
+    results['easy'] = run_task(easy, "easy")
+    results['medium'] = run_task(medium, "medium")
+    results['hard'] = run_task(hard, "hard")
     
     avg_score = sum(results.values()) / 3
     print(f"\nFinal Average Score: {avg_score:.3f}", flush=True)
