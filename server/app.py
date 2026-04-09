@@ -4,19 +4,19 @@ import re
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from openai import OpenAI
 
 # Fix import path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from env import TaskSchedulerEnv
+from tasks import easy, medium, hard
 
 # Initialize app
-app = FastAPI()
+app = FastAPI(title="Task Scheduler OpenEnv")
 
 # Store multiple environments
-environments: Dict[str, TaskSchedulerEnv] = {}
+environments: Dict[str, Any] = {}
 
 # Initialize OpenAI client using injected variables
 API_BASE_URL = os.environ.get("API_BASE_URL")
@@ -26,24 +26,44 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 # Validate API configuration
 if not API_BASE_URL or not API_KEY:
     print("[ERROR] API_BASE_URL and API_KEY must be set", flush=True)
-    sys.exit(1)
+    # Don't exit, just log for server mode
 
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=API_KEY
-)
+print(f"[INFO] API_BASE_URL: {API_BASE_URL}", flush=True)
+print(f"[INFO] MODEL_NAME: {MODEL_NAME}", flush=True)
+
+# Initialize client if credentials exist
+client = None
+if API_BASE_URL and API_KEY:
+    client = OpenAI(
+        base_url=API_BASE_URL,
+        api_key=API_KEY
+    )
 
 # Request models
 class StepRequest(BaseModel):
     action: int
 
 class ResetRequest(BaseModel):
-    task_id: Optional[str] = "default"
+    task_id: Optional[str] = "easy"
 
 # LLM function
 def get_action(state):
+    if client is None:
+        # Fallback if no client
+        tasks = state.get("tasks", [])
+        if tasks:
+            best_idx = 0
+            best_score = -999
+            for i, task in enumerate(tasks):
+                score = task.get('priority', 0) / max(task.get('duration', 1), 1)
+                if score > best_score:
+                    best_score = score
+                    best_idx = i
+            return best_idx
+        return 0
+    
     try:
-        print("Calling LLM from /step...", flush=True)
+        print("Calling LLM...", flush=True)
         
         tasks = state.get("tasks", [])
         if not tasks:
@@ -85,7 +105,7 @@ Return ONLY the number, nothing else."""
         return action
 
     except Exception as e:
-        print("LLM error:", e, flush=True)
+        print(f"LLM error: {e}", flush=True)
         # Fallback heuristic
         tasks = state.get("tasks", [])
         if tasks:
@@ -99,9 +119,9 @@ Return ONLY the number, nothing else."""
             return best_idx
         return 0
 
-# Health check
+# Health check endpoints
 @app.get("/")
-def health():
+def root():
     return {"status": "ok", "message": "OpenEnv Task Scheduler is Running"}
 
 @app.get("/health")
@@ -114,11 +134,17 @@ def reset(request: ResetRequest = None):
     if request is None:
         request = ResetRequest()
     
-    env_id = request.task_id or "default"
+    env_id = request.task_id or "easy"
     
-    # Create new environment
-    env = TaskSchedulerEnv()
-    env.reset()
+    # Create environment based on task_id
+    if env_id == "easy":
+        env = easy()
+    elif env_id == "medium":
+        env = medium()
+    elif env_id == "hard":
+        env = hard()
+    else:
+        env = easy()
     
     # Store it
     environments[env_id] = env
@@ -132,7 +158,7 @@ def reset(request: ResetRequest = None):
 
 # Step endpoint with env_id
 @app.post("/step/{env_id}")
-def step(env_id: str, request: StepRequest):
+def step_endpoint(env_id: str, request: StepRequest):
     if env_id not in environments:
         raise HTTPException(status_code=404, detail="Environment not found")
     
@@ -148,7 +174,7 @@ def step(env_id: str, request: StepRequest):
         "info": info
     }
 
-# State endpoint - REQUIRED
+# State endpoint - REQUIRED by OpenEnv
 @app.get("/state/{env_id}")
 def get_state(env_id: str):
     if env_id not in environments:
@@ -162,13 +188,12 @@ def get_state(env_id: str):
 # Default step endpoint (backward compatible)
 @app.post("/step")
 def step_default(request: StepRequest):
-    env_id = "default"
+    env_id = "easy"
     if env_id not in environments:
-        env = TaskSchedulerEnv()
-        env.reset()
+        env = easy()
         environments[env_id] = env
     
-    return step(env_id, request)
+    return step_endpoint(env_id, request)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
