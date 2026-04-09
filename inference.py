@@ -2,12 +2,11 @@ import os
 import re
 import sys
 from openai import OpenAI
-from tasks import easy, medium, hard
-from grader import grade
+from env import TaskSchedulerEnv  # Changed from tasks import easy, medium, hard
 
 # MUST use their environment variables
 API_BASE_URL = os.environ.get("API_BASE_URL")
-API_KEY = os.environ.get("HF_TOKEN") or os.environ.get("API_KEY")
+API_KEY = os.environ.get("API_KEY")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 
 # Validate API configuration
@@ -15,7 +14,7 @@ if not API_BASE_URL:
     print("[ERROR] API_BASE_URL environment variable not set", flush=True)
     sys.exit(1)
 if not API_KEY:
-    print("[ERROR] HF_TOKEN/API_KEY environment variable not set", flush=True)
+    print("[ERROR] API_KEY environment variable not set", flush=True)
     sys.exit(1)
 
 # Initialize client with THEIR proxy
@@ -81,9 +80,9 @@ Return ONLY the number, nothing else."""
             return best_idx
         return 0
 
-def run_task(task_func, task_name):
-    """Run a single task with required stdout format"""
-    env = task_func()
+def run_episode(env, episode_name):
+    """Run a single episode with required stdout format"""
+    env.reset()
     state = env.state()
     done = False
     total_reward = 0
@@ -91,7 +90,7 @@ def run_task(task_func, task_name):
     rewards = []
     
     # REQUIRED: [START] line format
-    print(f"[START] task={task_name} env=task-scheduler model={MODEL_NAME}", flush=True)
+    print(f"[START] task={episode_name} env=task-scheduler model={MODEL_NAME}", flush=True)
     
     while not done and step < 20:
         action = get_action(state)
@@ -108,7 +107,8 @@ def run_task(task_func, task_name):
         # REQUIRED: [STEP] line format
         print(f"[STEP] step={step} action={action} reward={normalized:.3f} done={str(done).lower()} error={error}", flush=True)
     
-    score = grade(total_reward)
+    # Calculate score (0.0-1.0)
+    score = min(1.0, total_reward / 10.0)
     rewards_str = ",".join(f"{r:.3f}" for r in rewards)
     
     # REQUIRED: [END] line format
@@ -119,9 +119,16 @@ if __name__ == "__main__":
     print("Running Inference on All Tasks...\n", flush=True)
     
     results = {}
-    results['easy'] = run_task(easy, "easy")
-    results['medium'] = run_task(medium, "medium")
-    results['hard'] = run_task(hard, "hard")
+    
+    # Run 3 episodes to simulate easy, medium, hard
+    env = TaskSchedulerEnv()
+    results['easy'] = run_episode(env, "easy")
+    
+    env = TaskSchedulerEnv()
+    results['medium'] = run_episode(env, "medium")
+    
+    env = TaskSchedulerEnv()
+    results['hard'] = run_episode(env, "hard")
     
     avg_score = sum(results.values()) / 3
     print(f"\nFinal Average Score: {avg_score:.3f}", flush=True)
