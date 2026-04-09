@@ -108,7 +108,7 @@ def health():
 def health_check():
     return {"status": "healthy"}
 
-# Reset endpoint - FIXED to handle task_id
+# Reset endpoint
 @app.post("/reset")
 def reset(request: ResetRequest = None):
     if request is None:
@@ -130,20 +130,16 @@ def reset(request: ResetRequest = None):
         "state": state
     }
 
-# Step endpoint - FIXED to accept action parameter
+# Step endpoint with env_id
 @app.post("/step/{env_id}")
 def step(env_id: str, request: StepRequest):
     if env_id not in environments:
         raise HTTPException(status_code=404, detail="Environment not found")
     
     env = environments[env_id]
-    state = env.state()
     
-    # Get action from request or use LLM
-    action = request.action
-    
-    # Take step
-    next_state, reward, done, info = env.step(action)
+    # Take step with provided action
+    next_state, reward, done, info = env.step(request.action)
     
     return {
         "state": next_state,
@@ -152,7 +148,7 @@ def step(env_id: str, request: StepRequest):
         "info": info
     }
 
-# State endpoint - ADD THIS (required by OpenEnv)
+# State endpoint - REQUIRED
 @app.get("/state/{env_id}")
 def get_state(env_id: str):
     if env_id not in environments:
@@ -163,22 +159,17 @@ def get_state(env_id: str):
     
     return {"state": state}
 
-# Alternative step endpoint without env_id (for backward compatibility)
+# Default step endpoint (backward compatible)
 @app.post("/step")
 def step_default(request: StepRequest):
     env_id = "default"
     if env_id not in environments:
-        # Auto-create default environment
         env = TaskSchedulerEnv()
         env.reset()
         environments[env_id] = env
     
     return step(env_id, request)
 
-# Entry point
-def main():
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-if __name__ == "__main__":
-    main()
