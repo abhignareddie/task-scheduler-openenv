@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from openai import OpenAI
-from env import TaskSchedulerEnv  # Changed from tasks import easy, medium, hard
+from env import TaskSchedulerEnv
 
 # MUST use their environment variables
 API_BASE_URL = os.environ.get("API_BASE_URL")
@@ -66,10 +66,9 @@ Return ONLY the number, nothing else."""
         
     except Exception as e:
         print(f"[ERROR] LLM call failed: {e}", flush=True)
-        # Fallback to simple heuristic if LLM fails
+        # Fallback to simple heuristic
         tasks = state.get("tasks", [])
         if tasks:
-            # Choose task with highest priority/duration ratio
             best_idx = 0
             best_score = -999
             for i, task in enumerate(tasks):
